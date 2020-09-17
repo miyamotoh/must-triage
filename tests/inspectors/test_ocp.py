@@ -75,6 +75,34 @@ class TestOCP:
         [
             (
                 dict(
+                    kind='ClusterServiceVersion',
+                    status=dict(phase='succeeded'),
+                ),
+                list()
+            ),
+            (
+                dict(
+                    kind='ClusterServiceVersion',
+                    status=dict(phase='other'),
+                ),
+                ["Operator phase is 'other', not 'Succeeded' as expected"]
+
+            ),
+            (
+                dict(kind='other'),
+                list()
+            )
+        ]
+    )
+    def test_operator_success(self, obj, expected):
+        result = OCP.operator_success(obj)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "obj,expected",
+        [
+            (
+                dict(
                     metadata=dict(name='test_pod'),
                     status=dict(containerStatuses=[
                         dict(
@@ -89,6 +117,24 @@ class TestOCP:
                     ]),
                 ),
                 ["Container 'test_container' in pod 'test_pod' is not ready"],
+            ),
+            (
+                dict(
+                    metadata=dict(name='test_pod'),
+                    status=dict(containerStatuses=[
+                        dict(
+                            name='test_container',
+                            ready=False,
+                            state=dict(
+                                terminated=dict(
+                                    reason='completed',
+                                    exitCode=0,
+                                ),
+                            ),
+                        ),
+                    ]),
+                ),
+                list(),
             ),
             (
                 dict(
