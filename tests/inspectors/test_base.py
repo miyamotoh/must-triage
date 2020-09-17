@@ -14,6 +14,9 @@ def inspector(request):
 
 
 class TestInspector:
+    def teardown(self):
+        patch.stopall()
+
     def test_init(self, inspector):
         assert inspector.root == '/tmp/must_triage_tests'
         assert inspector.progress is False
@@ -31,6 +34,26 @@ class TestInspector:
             inspector.gather()
         assert m_find.call_count == len(inspector.gather_types.keys())
         assert len(inspector.gathered.keys()) == m_find.call_count
+
+    @pytest.mark.asyncio
+    async def test_inspect(self, inspector):
+        inspector.gather_types = dict(
+            jpg=dict(),
+            png=dict(),
+        )
+        inspector.gathered = dict(
+            jpg=['1', '2'],
+            gif=['3', '4'],
+            png=['5', '6'],
+        )
+        inspector.inspect_jpg = True
+        inspector.inspect_png = True
+        p_helper = patch(
+            'must_triage.inspectors.base.Inspector._inspect_helper')
+        m_helper = p_helper.start()
+        m_helper.return_value = dict()
+        await inspector.inspect()
+        assert m_helper.call_count == 2  # once each for jpg, png
 
     @staticmethod
     def _dummy_inspector(path):
